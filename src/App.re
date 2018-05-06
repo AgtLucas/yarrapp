@@ -53,12 +53,52 @@ module Input = {
   }
 };
 
+type formValues = {
+  title: string,
+  description: string,
+};
+
+module Form = {
+  type state = {
+    values: record(formValues),
+  };
+  let component = ReasonReact.reducerComponent("Form");
+  let make = (~onSubmit, _) => {
+    ...component,
+    initialState: () => {
+      title: "",
+      description: "",
+    },
+    reducer: (newText, _) => ReasonReact.Update(newText),
+    render: ({ state: { title, description }, send }) =>
+      <form>
+        <input
+          _type="text"
+          value=title,
+          placeholder="Title"
+          onChange=(evt => send(valueFromEvent(evt)))
+        />
+        <input
+          _type="text"
+          value=description,
+          placeholder="Description"
+          onChange=(evt => send(valueFromEvent(evt)))
+        />
+        <button
+          onClick=(() => send(onSubmit({ title, description })))
+        >
+          (str("Create"))
+        </button>
+      </form>
+  }
+}
+
 type state = {
   items: list(item),
 };
 
 type action =
-  | AddItem(string)
+  | AddItem(record)
   | ToggleItem(int);
 
 let component = ReasonReact.reducerComponent("App");
@@ -102,9 +142,12 @@ let make = _children => {
       <p>
         (str("What to do?"))
       </p>
-      <Input onSubmit=(({ text, description }) => send(AddItem({ text, description }))) />
+      /* <Input onSubmit=(({ text, description }) => send(AddItem({ text, description }))) /> */
+      <Form
+        onSubmit=(({ title, description }) => send(AddItem({ text, description })))
+      />
       <div className="items">
-        (
+        /* (
           List.map(
             item =>
               <TodoItem
@@ -116,7 +159,7 @@ let make = _children => {
           )
             |> Array.of_list
             |> ReasonReact.array
-        )
+        ) */
         /* Or: */
         /* (
           ReasonReact.array(Array.of_list(
