@@ -1,6 +1,7 @@
 type item = {
   id: int,
   title: string,
+  description: string,
   completed: bool,
 };
 
@@ -63,11 +64,12 @@ type action =
 let component = ReasonReact.reducerComponent("App");
 
 let lastId = ref(0);
-let newItem = (text) => {
+let newItem = ({ text , description }) => {
   lastId := lastId^ + 1;
   {
     id: lastId^,
     title: text,
+    description: description,
     completed: false
   }
 };
@@ -78,12 +80,13 @@ let make = _children => {
     items: [{
         id: 0,
         title: "Write some things to do!",
+        description: "Whatever...",
         completed: false,
       }]
   },
   reducer: (action, { items }) =>
     switch action {
-    | AddItem(text) => ReasonReact.Update({ items: [ newItem(text), ...items ] })
+    | AddItem({ text, description }) => ReasonReact.Update({ items: [ newItem({ text, description }), ...items ] })
     | ToggleItem(id) =>
       let items = List.map(
         item =>
@@ -99,7 +102,7 @@ let make = _children => {
       <p>
         (str("What to do?"))
       </p>
-      <Input onSubmit=(text => send(AddItem(text))) />
+      <Input onSubmit=(({ text, description }) => send(AddItem({ text, description }))) />
       <div className="items">
         (
           List.map(
