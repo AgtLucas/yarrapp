@@ -1,11 +1,30 @@
+open Belt;
+
+[@bs.val] external unsafeJsonParse : string => 'a = "JSON.parse";
+
+let localStorageNamespace = "yarrapp_";
+
+let saveLocally = article =>
+  switch (Js.Json.stringifyAny(article)) {
+  | None => ()
+  | Some(stringifiedArticle) =>
+    Dom.Storage.(
+      localStorage |> setItem(localStorageNamespace, stringifiedArticle)
+    )
+  };
+
 type action =
   | UpdateTitle(string)
   | UpdateDescription(string)
   | Create;
 
-type state = {
+type article = {
   title: string,
   description: string,
+};
+
+type state = {
+  article: list(article),
 };
 
 let component = ReasonReact.reducerComponent("App");
@@ -32,11 +51,16 @@ let make = _children => {
     switch (action) {
     | UpdateTitle(value) => ReasonReact.Update({ ...state, title: value })
     | UpdateDescription(value) => ReasonReact.Update({ ...state, description: value })
-    | Create => ReasonReact.Update({ ...state, title: state.title, description: state.description })
+    | Create => ReasonReact.UpdateWithSideEffects(
+      { title: state.title, description: state.description },
+      (_self => saveLocally({ title: state.title, description: state.description }))
+    )
     },
   render: ({ state: { title, description }, send }) => {
     <div>
-      <form>
+      <form
+        onSubmit=((_) => send(Create))
+      >
         <label>
           (str("Title"))
           <input
@@ -55,6 +79,9 @@ let make = _children => {
             onChange=(event => send(updateDescription(event)))
           />
         </label>
+        <button>
+          (str("Create"))
+        </button>
       </form>
       <footer>
         <p>
