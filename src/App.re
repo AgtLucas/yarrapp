@@ -13,9 +13,15 @@ let saveLocally = article =>
     )
   };
 
+type routes =
+  | Home
+  | Essay
+  | NotFound;
+
 type action =
   | UpdateTitle(string)
   | UpdateDescription(string)
+  | ChangeRoutes(routes)
   | Create;
 
 type article = {
@@ -24,8 +30,18 @@ type article = {
 };
 
 type state = {
-  article: list(article),
+  /* article: list(article), */
+  title: string,
+  description: string,
+  currentPage: routes,
 };
+
+let mapUrlToRoute = (url: ReasonReact.Router.url) =>
+  switch (url.path) {
+  | [] => Home
+  | ["essay"] => Essay
+  | _ => NotFound
+  };
 
 let component = ReasonReact.reducerComponent("App");
 
@@ -46,51 +62,66 @@ let make = _children => {
   initialState: () => {
     title: "",
     description: "",
+    currentPage: ReasonReact.Router.dangerouslyGetInitialUrl() |> mapUrlToRoute,
   },
   reducer: (action, state) =>
     switch (action) {
     | UpdateTitle(value) => ReasonReact.Update({ ...state, title: value })
     | UpdateDescription(value) => ReasonReact.Update({ ...state, description: value })
+    | ChangeRoutes(nextRoute) => ReasonReact.Update({ ...state, currentPage: nextRoute })
     | Create => ReasonReact.UpdateWithSideEffects(
-      { title: state.title, description: state.description },
-      (_self => saveLocally({ title: state.title, description: state.description }))
+      { ...state, title: state.title, description: state.description },
+      (_self => {
+        saveLocally({ ...state, title: state.title, description: state.description });
+        ReasonReact.Router.push("essay");
+      })
     )
     },
-  render: ({ state: { title, description }, send }) => {
-    <div>
-      <form
-        onSubmit=((_) => send(Create))
-      >
-        <label>
-          (str("Title"))
-          <input
-            _type="text"
-            value=title
-            placeholder="e.g.: My awesome title!"
-            onChange=(event => send(updateTitle(event)))
-          />
-        </label>
-        <label>
-          (str("Description"))
-          <input
-            _type="text"
-            value=description
-            placeholder="e.g.: This is an awesome description, because, well, why not?"
-            onChange=(event => send(updateDescription(event)))
-          />
-        </label>
-        <button>
-          (str("Create"))
-        </button>
-      </form>
-      <footer>
-        <p>
-          (str(title))
-        </p>
-        <p>
-          (str(description))
-        </p>
-      </footer>
-    </div>
+  didMount: self => {
+    let watcherID =
+      ReasonReact.Router.watchUrl(url => {
+        self.send(ChangeRoutes(url |> mapUrlToRoute))
+      });
+      self.onUnmount(() => ReasonReact.Router.unwatchUrl(watcherID));
+  },
+  render: ({ state: { title, description, currentPage }, send }) => {
+    switch (currentPage) {
+    | Home => {
+      <div>
+        <form
+          onSubmit=((_) => send(Create))
+        >
+          <label>
+            (str("Title"))
+            <input
+              _type="text"
+              value=title
+              placeholder="e.g.: My awesome title!"
+              onChange=(event => send(updateTitle(event)))
+            />
+          </label>
+          <label>
+            (str("Description"))
+            <input
+              _type="text"
+              value=description
+              placeholder="e.g.: This is an awesome description, because, well, why not?"
+              onChange=(event => send(updateDescription(event)))
+            />
+          </label>
+          <button>
+            (str("Create"))
+          </button>
+        </form>
+      </div>
+    }
+    | Essay => {
+      <div>
+        <h1>(str(title))</h1>
+        <pre>(str(description))</pre>
+      </div>
+    }
+    | NotFound => <div>(str("Oh, no!"))</div>
+    }
   },
 };
