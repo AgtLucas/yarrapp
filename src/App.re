@@ -115,13 +115,8 @@ let make = _children => {
         </form>
       </div>
     }
-    | Essay => {
-      <div>
-        <h1>(str(title))</h1>
-        <pre>(str(description))</pre>
-      </div>
-    }
-    | NotFound => <div>(str("Oh, no!"))</div>
+    | Essay => <Essay title description />
+    | NotFound => <NotFound />
     }
   },
 };
