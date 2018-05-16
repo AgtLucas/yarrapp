@@ -2,12 +2,12 @@ let component = ReasonReact.statelessComponent("Essay");
 
 let str = ReasonReact.string;
 
-let make = (~title, ~description, _children) => {
+let make = (~title, ~text, _children) => {
   ...component,
   render: _self => {
     <div>
       <h1>(str(title))</h1>
-      <p>(str(description))</p>
+      <p>(str(text))</p>
     </div>
   },
 };

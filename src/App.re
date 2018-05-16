@@ -20,19 +20,19 @@ type routes =
 
 type action =
   | UpdateTitle(string)
-  | UpdateDescription(string)
+  | UpdateText(string)
   | ChangeRoutes(routes)
   | Create;
 
 type article = {
   title: string,
-  description: string,
+  text: string,
 };
 
 type state = {
   /* article: list(article), */
   title: string,
-  description: string,
+  text: string,
   currentPage: routes,
 };
 
@@ -55,24 +55,24 @@ let valueFromEvent = (evt) : string => (
 
 let updateTitle = (event) => UpdateTitle(valueFromEvent(event));
 
-let updateDescription = (event) => UpdateDescription(valueFromEvent(event));
+let updateText = (event) => UpdateText(valueFromEvent(event));
 
 let make = _children => {
   ...component,
   initialState: () => {
     title: "",
-    description: "",
+    text: "",
     currentPage: ReasonReact.Router.dangerouslyGetInitialUrl() |> mapUrlToRoute,
   },
   reducer: (action, state) =>
     switch (action) {
     | UpdateTitle(value) => ReasonReact.Update({ ...state, title: value })
-    | UpdateDescription(value) => ReasonReact.Update({ ...state, description: value })
+    | UpdateText(value) => ReasonReact.Update({ ...state, text: value })
     | ChangeRoutes(nextRoute) => ReasonReact.Update({ ...state, currentPage: nextRoute })
     | Create => ReasonReact.UpdateWithSideEffects(
-      { ...state, title: state.title, description: state.description },
+      { ...state, title: state.title, text: state.text },
       (_self => {
-        saveLocally({ ...state, title: state.title, description: state.description });
+        saveLocally({ ...state, title: state.title, text: state.text });
         ReasonReact.Router.push("essay");
       })
     )
@@ -84,38 +84,18 @@ let make = _children => {
       });
       self.onUnmount(() => ReasonReact.Router.unwatchUrl(watcherID));
   },
-  render: ({ state: { title, description, currentPage }, send }) => {
+  render: ({ state: { title, text, currentPage }, send }) => {
     switch (currentPage) {
     | Home => {
-      <div>
-        <form
-          onSubmit=((_) => send(Create))
-        >
-          <label>
-            (str("Title"))
-            <input
-              _type="text"
-              value=title
-              placeholder="e.g.: My awesome title!"
-              onChange=(event => send(updateTitle(event)))
-            />
-          </label>
-          <label>
-            (str("Description"))
-            <input
-              _type="text"
-              value=description
-              placeholder="e.g.: This is an awesome description, because, well, why not?"
-              onChange=(event => send(updateDescription(event)))
-            />
-          </label>
-          <button>
-            (str("Create"))
-          </button>
-        </form>
-      </div>
+      <Form
+        onChangeTitle=(event => send(updateTitle(event)))
+        onChangeText=(event => send(updateText(event)))
+        createEssay=(_ => send(Create))
+        title
+        text
+      />
     }
-    | Essay => <Essay title description />
+    | Essay => <Essay title text />
     | NotFound => <NotFound />
     }
   },
